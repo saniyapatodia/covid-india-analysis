@@ -7,8 +7,7 @@ import time
 import matplotlib
 import matplotlib.pyplot as plt
 import requests
-
-st.title(' Analysis of COVID-19 cases in India')
+from PIL import Image
 
 CODE_TO_STATE = {
     'AN': 'Andaman and Nicobar Islands',		
@@ -49,24 +48,6 @@ CODE_TO_STATE = {
     'UT': 'Uttarakhand',
     'WB': 'West Bengal',
 }
-
-@st.cache
-def load_covid_data(nrows=-1):
-    DATA_URL = ('../data/covid_19_india.csv')
-    if nrows == -1:
-        data = pd.read_csv(DATA_URL)
-    else:
-        data = pd.read_csv(DATA_URL, nrows=nrows)
-    data['Date'] = pd.to_datetime(data['Date'], format='%d/%m/%y')
-    data['Time'] = pd.to_datetime(data['Time'], format='%I:%M %p').dt.time
-    data['ConfirmedIndianNational'] = data['ConfirmedIndianNational'].replace('-', '0')
-    data['ConfirmedIndianNational'] = data['ConfirmedIndianNational'].astype(int)
-    data['ConfirmedForeignNational'] = data['ConfirmedForeignNational'].replace('-', '0')
-    data['ConfirmedForeignNational'] = data['ConfirmedForeignNational'].astype(int)
-    data['Cured'] = data['Cured'].astype(int)
-    data['Deaths'] = data['Deaths'].astype(int)
-    data['Confirmed'] = data['Confirmed'].astype(int)
-    return data
 
 @st.cache(allow_output_mutation=True)
 def get_statewise_data():
@@ -115,8 +96,8 @@ def get_statewise_daily_changes():
 
     return confirmed, recovered, deceased
 
-
 def load_and_display_state_data():
+    st.title(' Analysis of COVID-19 cases in India')
     statewise_data = get_statewise_data()
     st.subheader('Statewise covid-19 data:')
     st.write(statewise_data)
@@ -145,8 +126,6 @@ def load_and_display_state_data():
         height=400,
     )
     st.altair_chart(chart)
-
-
 
     confirmed, recovered, deceased = get_statewise_daily_changes()
 
@@ -193,19 +172,84 @@ def load_and_display_state_data():
     st.altair_chart(chart)
 
 def load_and_display_state_comparison_data():
-    pass
+    st.title('Covid-19 Inter-State Comparison')
+    statewise_data = get_statewise_data()
+    states = statewise_data['state'].tolist()
+    state_one = st.selectbox(
+        'Pick the first state to analyse:',
+        states)
+    state_two = st.selectbox(
+        'Pick the second state to analyse:',
+        list(reversed(states)))
+    state_one_data = statewise_data.loc[statewise_data['state'] == state_one]
+    state_two_data = statewise_data.loc[statewise_data['state'] == state_two]
+    state_data = pd.concat([state_one_data, state_two_data])
+    st.write(state_data)
+    state_code = state_one_data['state_code'].iloc[0]
+    state_code = state_two_data['state_code'].iloc[0]
+    state_code = state_code.lower()
+    state_one_data = pd.DataFrame({
+        'Covid-19 Case Status': ['confirmed', 'deceased', 'recovered', 'tested'],
+        'Number (corresponding to each category)': [
+            state_one_data['confirmed'].iloc[0], state_one_data['deceased'].iloc[0],
+            state_one_data['recovered'].iloc[0], state_one_data['tested'].iloc[0]]})
+    state_two_data = pd.DataFrame({
+        'Covid-19 Case Status': ['confirmed', 'deceased', 'recovered', 'tested'],
+        'Number (corresponding to each category)': [
+            state_two_data['confirmed'].iloc[0], state_two_data['deceased'].iloc[0],
+            state_two_data['recovered'].iloc[0], state_two_data['tested'].iloc[0]]})
+    
+    st.subheader('Plot comparing the no. of confirmed cases of the selected states:')
+    chart = alt.Chart(state_data).mark_bar().encode(
+        x = 'state',
+        color = 'state',
+        y = 'confirmed',
+    ).properties(
+        width=500,
+        height=450)
+    st.altair_chart(chart)
 
-state_comparison_data = load_and_display_state_comparison_data()
+    st.subheader('Plot comparing the no. of recovered cases of the selected states:')
+    chart = alt.Chart(state_data).mark_bar().encode(
+        x = 'state',
+        color='state',
+        y='recovered',
+    ).properties(
+        width=500,
+        height=450)
+    st.altair_chart(chart)
 
+    st.subheader('Plot comparing the no. of deceased cases of the selected states:')
+    chart = alt.Chart(state_data).mark_bar().encode(
+        x = 'state',
+        color='state',
+        y='deceased',
+    ).properties(
+        width=500,
+        height=450)
+    st.altair_chart(chart)
+  
 def display_covid_prevention_data():
-    pass
-
-covid_prevention_data = display_covid_prevention_data()
-
+    st.title("Prevention from COVID-19")
+    st.subheader('Protect yourself and others from Covid-19')
+    st.write('If COVID-19 is spreading in your community, stay safe by taking some simple precautions, such as physical distancing, wearing a mask, keeping rooms well ventilated, avoiding crowds, cleaning your hands, and coughing into a bent elbow or tissue. Check local advice where you live and work. Do it all!')
+    mask_image = Image.open('../images/wear-a-mask.png')
+    if mask_image.mode != 'RGB':
+        mask_image = mask_image.convert('RGB')
+    st.image(mask_image, width=350)
+    
+    st.subheader('A Few Precautions that must be taken:')
+    st.write('''1.Maintain at least a 1-metre distance between yourself and others to reduce your risk of infection when they cough, sneeze or speak. Maintain an even greater distance between yourself and others when indoors. The further away, the better.\n
+2.Make wearing a mask a normal part of being around other people. The appropriate use, storage and cleaning or disposal are essential to make masks as effective as possible.\n
+3.Avoid the 3Cs: spaces that are closed, crowded or involve close contact.\n
+4.Avoid meeting people. However, if necessary, choose outdoor settings and avoid crowded or indoor settings.''')
+    
+    hygiene_image = Image.open('../images/hygiene-icons.png')
+    st.image(hygiene_image, width=700)
 
 sidebar_options = {
-    'Covid-19 State-specific data': load_and_display_state_data,
-    'Covid-19 State-comparison data': load_and_display_state_comparison_data,
+    'Covid-19 State-Specific data': load_and_display_state_data,
+    'Covid-19 State-Comparison data': load_and_display_state_comparison_data,
     'Covid-19 Prevention': display_covid_prevention_data,
 
 }
@@ -216,186 +260,3 @@ sidebar_selection = st.sidebar.selectbox(
 )
 
 sidebar_options[sidebar_selection]()
-
-print('=' * 40)
-
-def get_testing_data():
-    response = requests.get("https://api.covid19india.org/state_test_data.json")
-    content = response.json()
-
-def get_datewise_daily_changes():
-    response = requests.get("https://api.covid19india.org/v4/data-YYYY-MM-DD.json")
-    content = response.json()
-
-
-
-
-'''
-def plot_statewise_bar_chart(statewise_bar_data):
-    #Plotting a graph showing the statewise cases of the people in a state
-    st.subheader('COVID-19 bar plot showing the statewise cases of the people in a state: ')
-    chart = alt.Chart(statewise_bar_data).mark_bar().encode(
-    x='state', y='confirmed').interactive()
-    st.altair_chart(chart)
-
-bar_plot = plot_statewise_bar_chart(statewise_bar_data)
-
-
-
-
-def plot_covid_data(covid_data):
-    #Plotting a graph showing the number of covid cases datewise
-    st.subheader('COVID-19 plot of confirmed cases: ')
-    chart = alt.Chart(covid_data).mark_line().encode(
-    x='Date', y='Confirmed', color='State/UnionTerritory'
-    ).interactive()
-    st.altair_chart(chart)
-
-def plot_covid_state_data(covid_data):
-    st.subheader('COVID-19 statewise analysis of cases: ')
-    states = np.sort(pd.unique(covid_data['State/UnionTerritory']))
-    option = st.selectbox('Please select a state!', list(states))
-    st.write('You selected:', option)
-
-    #Plotting a graph showing the number of covid cases datewise and statewise
-    state_data  = covid_data[covid_data['State/UnionTerritory'] == option]
-    state_data_melted = state_data.reset_index().melt('Date')
-    state_data_melted
-    state_data_melted = state_data_melted[
-        (state_data_melted['variable'] == 'Confirmed') |
-        (state_data_melted['variable'] == 'Deaths') |
-        (state_data_melted['variable'] == 'Cured')
-    ]
-    chart = alt.Chart(state_data_melted).mark_line().encode(
-        x='Date', y='value', color='variable'
-    )
-    st.altair_chart(chart)
-
-def load_and_display_covid_data():
-    data_load_state = st.text('Loading covid data...')
-    covid_data = load_covid_data()
-    data_load_state.text('Loading covid data... done!')
-    st.subheader('Covid-19 Data Table: ')
-    covid_data
-    plot_covid_data(covid_data)
-    plot_covid_state_data(covid_data)
-                                                
-
-#url 2
-@st.cache
-def load_age_group_covid_data():
-    DATA_URL = '../data/AgeGroupDetails.csv'
-    data = pd.read_csv(DATA_URL)
-    data['AgeGroup'] = data['AgeGroup'].astype(str)
-    return data
-
-
-def plot_age_group_bar_chart(age_group_data):
-    #Plotting a graph showing the number of covid cases on the basis of the age group of the people
-    st.subheader('COVID-19 bar plot of cases on the basis of the age group of the people: ')
-    chart = alt.Chart(age_group_data).mark_bar().encode(
-    x='AgeGroup', y='TotalCases').interactive()
-    st.altair_chart(chart)
-
-def plot_age_group_pie_chart(age_group_data):
-    #Plotting a pie chart showing the number of covid cases on the basis of the age group of the people
-    st.subheader('Pie chart showing the number of covid cases on the basis of the age group of the people')
-    fig = plt.figure(figsize =(10, 10))
-    plt.pie(age_group_data['TotalCases'], labels = age_group_data['AgeGroup'])
-    plt.legend(loc = 'upper right')
-    st.pyplot()
-
-def load_and_display_age_group_covid_data():
-    age_group_data = load_age_group_covid_data()
-    st.write(age_group_data)
-    plot_age_group_bar_chart(age_group_data)
-    plot_age_group_pie_chart(age_group_data)
-
-#url 3
-@st.cache
-def load_individual_details():
-    DATA_URL = '../data/IndividualDetails.csv'
-    data = pd.read_csv(DATA_URL)
-    return data
-
-def individual_details_pie_chart(individual_details_data):
-    #Plotting a pie chart showing the number of covid cases on the basis of their travelling history
-    st.subheader('Pie chart showing the number of covid cases on the basis of their travelling history')
-    fig = plt.figure(figsize =(10, 10))
-    plt.pie(individual_details_data['TotalCases'], labels = individual_details_data['notes'])
-    plt.legend(loc = 'upper right')
-    st.pyplot()
-def load_and_display_individual_details():
-    Individual_Details_data = load_individual_details()
-    st.write(Individual_Details_data)
-
-#url 4
-@st.cache
-def load_testing_details():
-    DATA_URL = '../data/StatewiseTestingDetails.csv'
-    data = pd.read_csv(DATA_URL)
-    data['Negative'] = data['TotalSamples'] - data['Positive']
-    data['Date'] = pd.to_datetime(data['Date'], format='%Y-%m-%d')
-    return data
-
-def plot_testing_details(testing_details_data):
-    st.subheader('Analysis of Testing Details: ')
-
-    states = np.sort(pd.unique(testing_details_data['State']))
-    option = st.selectbox('Please select a state!', list(states))
-    st.write('You selected:', option)
-    state_data = testing_details_data[testing_details_data['State'] == option]
-
-    #Plotting a graph showing the number of covid cases datewise and statewise
-    st.subheader('COVID-19 bar plot showing the testing details of a group of people: ')
-    state_data = state_data.reset_index().melt('Date')
-    state_data = state_data[
-        (state_data['variable'] == 'Positive') |
-        (state_data['variable'] == 'Negative')
-    ]
-    st.write(state_data)
-    chart = alt.Chart(state_data).mark_line().encode(
-        x='Date',
-        y='value',
-        color='variable',
-    ).interactive()
-    st.altair_chart(chart)
-
-
-def plot_testing_details_bar_chart(testing_details_data):
-    #Plotting a graph showing the testing details of a group of people
-    st.subheader('COVID-19 bar plot showing the details of a group of people tested positive: ')
-    chart = alt.Chart(testing_details_data).mark_bar().encode(
-    x='State', y='Positive').interactive()
-    st.altair_chart(chart)
-
-def plot_testing_details2_bar_chart(testing_details_data):
-    #Plotting a graph showing the testing details of a group of people
-    st.subheader('COVID-19 bar plot showing the details of a group of people tested negative: ')
-    chart = alt.Chart(testing_details_data).mark_bar().encode(
-    x='State', y='Negative').interactive()
-    st.altair_chart(chart)
-
-
-def load_and_display_testing_details():
-    testing_details_data = load_testing_details()
-    st.write(testing_details_data)
-    plot_testing_details_bar_chart(testing_details_data)
-    plot_testing_details2_bar_chart(testing_details_data)
-    plot_testing_details(testing_details_data)
-
-
-sidebar_options = {
-    'Covid-19 Overview': load_and_display_covid_data,
-    'Covid-19 Age-wise analysis': load_and_display_age_group_covid_data,
-    'Individual Details': load_and_display_individual_details,
-    'Testing Details': load_and_display_testing_details
-}
-
-sidebar_selection = st.sidebar.selectbox(
-    'What type of analysis would you like to conduct?',
-    list(sidebar_options.keys())
-)
-
-sidebar_options[sidebar_selection]()
-'''
