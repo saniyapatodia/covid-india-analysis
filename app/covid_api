@@ -14,3 +14,7 @@ Patient Level : Raw Data Partition 15 (From Sep 06 to Sep 21)	https://api.covid1
 :green_heart:	National/State/District Level : Latest cumulative/daily counts	https://api.covid19india.org/v4/data.json
 :green_heart:	National/State/District Level : Specific date cummulative/daily counts	https://api.covid19india.org/v4/data-YYYY-MM-DD.json
 
+chart = alt.Chart(state_one_data).mark_line().encode(
+    x='confirmed',
+    y='state_code')
+    st.altair_chart(chart)

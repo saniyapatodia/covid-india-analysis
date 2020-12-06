@@ -233,7 +233,7 @@ def display_covid_prevention_data():
     st.title("Prevention from COVID-19")
     st.subheader('Protect yourself and others from Covid-19')
     st.write('If COVID-19 is spreading in your community, stay safe by taking some simple precautions, such as physical distancing, wearing a mask, keeping rooms well ventilated, avoiding crowds, cleaning your hands, and coughing into a bent elbow or tissue. Check local advice where you live and work. Do it all!')
-    mask_image = Image.open('../images/wear-a-mask.png')
+    mask_image = Image.open('./images/wear-a-mask.png')
     if mask_image.mode != 'RGB':
         mask_image = mask_image.convert('RGB')
     st.image(mask_image, width=350)
@@ -244,7 +244,7 @@ def display_covid_prevention_data():
 3.Avoid the 3Cs: spaces that are closed, crowded or involve close contact.\n
 4.Avoid meeting people. However, if necessary, choose outdoor settings and avoid crowded or indoor settings.''')
     
-    hygiene_image = Image.open('../images/hygiene-icons.png')
+    hygiene_image = Image.open('./images/hygiene-icons.png')
     st.image(hygiene_image, width=700)
 
 sidebar_options = {
